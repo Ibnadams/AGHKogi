@@ -3,541 +3,306 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kogi Word Search: 5-Minute Mobile Challenge (Kogi State AGH)</title>
+    <title>Kogi State Quiz Challenge (Kogi State AGH)</title>
     
     <style>
         /* --- CSS STYLES --- */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
-            flex-direction: column;
-            justify-content: flex-start; 
-            align-items: center;
+            justify-content: center;
+            align-items: flex-start;
             min-height: 100vh;
             margin: 0;
             padding: 10px;
-            background-color: #F0F8FF; /* Light Blue background */
+            /* Confluence-themed background: Sandy Brown/Beige */
+            background-color: #F4A460; 
             color: #333;
         }
 
         #game-container {
-            width: 95%; /* Increased width for mobile use */
-            max-width: 450px; 
-            padding: 15px;
-            background-color: #FFFFFF;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            width: 95%;
+            max-width: 600px;
+            background-color: #FFF8DC; /* Cornsilk white */
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            margin-top: 2vh;
+            border: 3px solid #8B4513; /* Saddle Brown */
+        }
+
+        #header {
             text-align: center;
             margin-bottom: 15px;
-            margin-top: 10px;
-        }
-
-        h1 {
-            color: #1E90FF; 
-            font-size: 1.6em; 
-            margin-bottom: 5px;
-        }
-
-        #creator-ref {
-            font-size: 0.8em; 
-            font-style: italic;
-            opacity: 0.7;
-            margin-bottom: 10px;
         }
         
+        h1 {
+            color: #00008B; /* Dark Blue for River Niger/Benue */
+            margin: 0 0 5px 0;
+            font-size: 1.8em;
+        }
+        
+        #creator-ref {
+            font-size: 0.9em;
+            font-style: italic;
+            opacity: 0.8;
+            color: #555;
+        }
+
         #stats-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
-            padding: 5px 0;
-            border-bottom: 1px solid #ddd;
-            width: 100%;
-            font-size: 0.9em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #CD853F; /* Peru */
         }
 
-        #timer-display, #score-display {
+        #timer-display, #progress-display {
             font-weight: bold;
-            color: #D32F2F; 
+            font-size: 1.2em;
+            color: #D2691E; /* Chocolate */
         }
 
-        #message-area {
-            height: 30px;
-            color: #FF4500;
-            font-weight: bold;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            font-size: 0.95em;
+        #quiz-area {
+            margin-bottom: 20px;
         }
 
-        #grid-container {
+        #question-text {
+            font-size: 1.2em;
+            font-weight: 500;
+            margin-bottom: 20px;
+            min-height: 60px; /* Reserve space for question text */
+            color: #00008B;
+        }
+
+        #options-container {
             display: grid;
-            grid-template-columns: repeat(10, 1fr); 
-            gap: 0px; 
-            border: 3px solid #1E90FF; 
-            border-radius: 5px;
-            overflow: hidden; 
-            width: 100%;
-            touch-action: none; /* Prevents browser scrolling/zooming during drag */
+            grid-template-columns: 1fr;
+            gap: 10px;
         }
 
-        .grid-cell {
-            width: 100%;
-            padding: 0.5em 0; 
-            aspect-ratio: 1 / 1; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.1em; 
-            font-weight: bold;
-            background-color: #E6E6FA; 
-            color: #1E90FF;
-            cursor: pointer;
-            transition: background-color 0.1s;
-            user-select: none;
-            border: none; 
-            box-sizing: border-box; 
-            z-index: 0; /* Base layer */
-        }
-        
-        /* Highlighting for selected cells */
-        .grid-cell.selected {
-            background-color: #ADD8E6; 
-            border: 1px solid #1E90FF; 
-            z-index: 2; /* Higher layer for selection */
-            position: relative;
-        }
-        
-        /* Highlighting for FOUND words */
-        .grid-cell.found {
-            background-color: #3CB371; 
-            color: white;
-            border: 1px solid #3CB371; 
-            box-shadow: 0 0 3px #3CB371;
-            z-index: 3; /* Top layer for found words */
-            position: relative;
-        }
-
-        #word-list-container {
-            width: 95%;
-            max-width: 450px;
-            margin-top: 10px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 5px; 
-            padding: 10px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-        }
-
-        .word-to-find {
-            padding: 4px 8px; 
-            background-color: #ccc;
-            color: #555;
-            border-radius: 4px;
-            font-size: 0.8em; 
-            font-weight: bold;
-            text-transform: uppercase;
-            transition: opacity 0.3s, background-color 0.3s;
-        }
-
-        .word-to-find.found {
-            background-color: #3CB371;
-            color: white;
-            opacity: 0.6;
-            text-decoration: line-through;
-        }
-        
-        #start-button {
-            padding: 10px 20px;
-            font-size: 1.1em;
-            background-color: #1E90FF;
+        .option-button {
+            padding: 15px;
+            background-color: #4682B4; /* Steel Blue */
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            margin-top: 15px;
+            font-size: 1em;
+            font-weight: bold;
+            text-align: left;
+            transition: background-color 0.2s, transform 0.1s;
         }
 
+        .option-button:hover:not(:disabled) {
+            background-color: #4169E1; /* Royal Blue */
+            transform: scale(1.02);
+        }
+
+        .option-button.correct {
+            background-color: #2E8B57; /* Sea Green */
+        }
+        
+        .option-button.incorrect {
+            background-color: #B22222; /* Firebrick Red */
+        }
+
+        .option-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        #start-button-container {
+            text-align: center;
+        }
+
+        #start-button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            background-color: #8B4513; /* Saddle Brown */
+            color: white; 
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        #start-button:hover:not(:disabled) {
+            background-color: #A0522D; /* Sienna */
+        }
+        
         #start-button:disabled {
             background-color: #999;
             cursor: not-allowed;
         }
 
-        /* Specific Mobile adjustments for very small screens */
-        @media (max-width: 400px) {
-            .grid-cell {
-                font-size: 0.8em; 
-                padding: 0.4em 0;
-            }
+        /* Mobile adjustments */
+        @media (max-width: 500px) {
+            h1 { font-size: 1.5em; }
+            #question-text { font-size: 1.1em; }
+            .option-button { padding: 12px; font-size: 0.9em; }
         }
     </style>
 </head>
 <body>
     <div id="game-container">
-        <h1>Kogi Word Search Scramble 🗺️</h1>
-        <div id="creator-ref">Find the words related to the Confluence State! (Kogi State AGH)</div>
-        
-        <div id="stats-bar">
-            <span>Time Left: <span id="timer-display">5:00</span></span>
-            <span>Words Found: <span id="score-display">0</span>/<span id="total-words"></span></span>
+        <div id="header">
+            <h1>Kogi State Quiz Challenge 🗺️</h1>
+            <div id="creator-ref">Created by Kogi State AGH</div>
         </div>
 
-        <div id="message-area">Click "Start Game" to begin your 5-minute challenge!</div>
+        <div id="stats-bar" style="display: none;">
+            <span id="timer-container">Time Left: <span id="timer-display">3:00</span></span>
+            <span id="progress-container">Question: <span id="progress-display">1/20</span></span>
+        </div>
 
-        <div id="grid-container">
-            </div>
+        <div id="quiz-area" style="display: none;">
+            <div id="question-text"></div>
+            <div id="options-container"></div>
+        </div>
         
-        <button id="start-button">Start Game</button>
+        <div id="start-button-container">
+            <button id="start-button">Start Challenge!</button>
+        </div>
     </div>
-    
-    <div id="word-list-container">
-        </div>
     
     <script>
         /* --- JAVASCRIPT LOGIC --- */
-        // 15 WORDS
-        const WORDS_TO_FIND = [
-            "NIGER", "BENUE", "LOKOJA", "IGALA", 
-            "EBIRA", "AJAOKUTA", "OKENE", "KABBA",
-            "YAGBA", "CHAD", "KOGI", "CONFLUENCE",
-            "STEEL", "RIVERS", "MINERALS"
+        const QUIZ_DATA = [
+            { question: "What is the capital city of Kogi State?", options: ["Okene", "Lokoja", "Idah", "Kabba"], answer: "Lokoja" },
+            { question: "Kogi State is popularly known as The ________ State.", options: ["Confluence", "Power", "Food Basket", "Treasure Base"], answer: "Confluence" },
+            { question: "Which two major rivers meet in Kogi State?", options: ["Niger and Kaduna", "Benue and Sokoto", "Niger and Benue", "Anambra and Imo"], answer: "Niger and Benue" },
+            { question: "The Ajaokuta Steel Company is located in which part of Kogi State?", options: ["Kogi West", "Kogi East", "Kogi Central", "Lokoja"], answer: "Kogi Central" },
+            { question: "Which of these ethnic groups is considered one of the major groups in Kogi State?", options: ["Tiv", "Fulani", "Igala", "Kanuri"], answer: "Igala" },
+            { question: "The first Governor of Kogi State was?", options: ["Abubakar Audu", "Ibrahim Idris", "Idris Wada", "Danladi Mohammed Zakari"], answer: "Danladi Mohammed Zakari" },
+            { question: "Which Nigerian president declared Lokoja a state capital in 1991?", options: ["Shehu Shagari", "Ibrahim Babangida", "Sani Abacha", "Olusegun Obasanjo"], answer: "Ibrahim Babangida" },
+            { question: "Mount Patti offers a panoramic view of the confluence point in which city?", options: ["Anyigba", "Okene", "Lokoja", "Koton Karfe"], answer: "Lokoja" },
+            { question: "What is the primary mineral resource found in Ajaokuta?", options: ["Coal", "Limestone", "Gold", "Iron Ore"], answer: "Iron Ore" },
+            { question: "Which traditional festival is famously celebrated by the Igala people?", options: ["Ocho", "Pategi Regatta", "Ogun", "Argungu"], answer: "Ocho" },
+            { question: "Kogi State was created from parts of which two states?", options: ["Benue and Niger", "Kwara and Benue", "Anambra and Kwara", "Edo and Benue"], answer: "Kwara and Benue" },
+            { question: "The traditional ruler of the Igala Kingdom is known as?", options: ["Ohinoyi", "Obaro", "Attah", "Etsu"], answer: "Attah" },
+            { question: "What does the word 'Lokoja' mean in the Yoruba language?", options: ["A fine city", "A new settlement", "A place of trade", "A beautiful hill"], answer: "A fine city" },
+            { question: "Which of these is a major higher institution located in Kogi State?", options: ["University of Ilorin", "Kogi State University", "Benue State University", "ATBU Bauchi"], answer: "Kogi State University" },
+            { question: "The Ebira people are predominantly found in which senatorial district?", options: ["Kogi East", "Kogi West", "Kogi Central", "Kogi North"], answer: "Kogi Central" },
+            { question: "What is the name of the colonial cemetery in Lokoja?", options: ["European Cemetery", "Commonwealth Cemetery", "Lord Lugard Cemetery", "Royal Niger Cemetery"], answer: "European Cemetery" },
+            { question: "Which agricultural product is Kogi State widely known for producing?", options: ["Cocoa", "Rubber", "Cashew", "Groundnut"], answer: "Cashew" },
+            { question: "The Obaro of Kabba is the traditional ruler of which people?", options: ["Okun", "Gbagyi", "Bassa", "Nupe"], answer: "Okun" },
+            { question: "The Late Lord Lugard amalgamated the Northern and Southern protectorates in which city?", options: ["Calabar", "Lagos", "Zungeru", "Lokoja"], answer: "Lokoja" },
+            { question: "Which of these towns is famous for its unique cloth weaving tradition?", options: ["Idah", "Okene", "Ankpa", "Dekina"], answer: "Okene" }
         ];
-        
-        const GRID_SIZE = 10; // 10x10 grid
-        const TIMER_DURATION = 300; // 5 minutes in seconds
 
-        const gridContainer = document.getElementById('grid-container');
-        const wordListContainer = document.getElementById('word-list-container');
-        const messageArea = document.getElementById('message-area');
-        const timerDisplay = document.getElementById('timer-display');
-        const scoreDisplay = document.getElementById('score-display');
-        const totalWordsDisplay = document.getElementById('total-words');
         const startButton = document.getElementById('start-button');
+        const startButtonContainer = document.getElementById('start-button-container');
+        const statsBar = document.getElementById('stats-bar');
+        const quizArea = document.getElementById('quiz-area');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const timerDisplay = document.getElementById('timer-display');
+        const progressDisplay = document.getElementById('progress-display');
 
-        let grid = [];
-        let isGameRunning = false;
-        let isMouseDown = false;
-        let startCell = null;
-        let currentSelection = [];
-        let foundWords = [];
-        let timeLeft = TIMER_DURATION;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timeLeft = 180; // 3 minutes for 20 questions
         let gameInterval;
-        
-        totalWordsDisplay.textContent = WORDS_TO_FIND.length;
+        let shuffledQuestions = [];
 
-        // --- Utility Functions ---
+        function startGame() {
+            startButtonContainer.style.display = 'none';
+            statsBar.style.display = 'flex';
+            quizArea.style.display = 'block';
 
-        function formatTime(seconds) {
-            const minutes = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+            currentQuestionIndex = 0;
+            score = 0;
+            timeLeft = 180;
+            
+            // Shuffle questions for replayability
+            shuffledQuestions = QUIZ_DATA.sort(() => Math.random() - 0.5);
+
+            displayQuestion();
+            startTimer();
         }
 
-        function getCellFromEvent(e) {
-            // Use elementFromPoint for reliable touch target detection
-            let target;
-            if (e.clientX !== undefined) {
-                // Mouse event
-                target = e.target.closest('.grid-cell');
-            } else if (e.touches && e.touches.length > 0) {
-                // Touch event
-                const touch = e.touches[0];
-                target = document.elementFromPoint(touch.clientX, touch.clientY);
-                if (target && !target.classList.contains('grid-cell')) {
-                    target = target.closest('.grid-cell');
-                }
-            }
-            
-            if (!target) return null;
-
-            return {
-                cell: target,
-                r: parseInt(target.dataset.row),
-                c: parseInt(target.dataset.col)
-            };
-        }
-
-        // --- Game Flow Functions ---
-
-        function initializeGrid() {
-            gridContainer.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 1fr)`;
-            grid = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(''));
-            foundWords = [];
-            timeLeft = TIMER_DURATION;
-            scoreDisplay.textContent = 0;
-            timerDisplay.textContent = formatTime(timeLeft);
-            
-            placeWords();
-            fillEmptyCells();
-            renderGrid();
-            renderWordList();
-        }
-
-        function placeWords() {
-            const directions = [
-                { dr: 0, dc: 1 }, { dr: 1, dc: 0 }, { dr: 1, dc: 1 }, 
-                { dr: 0, dc: -1 }, { dr: -1, dc: 0 }, { dr: -1, dc: 1 }, 
-                { dr: 1, dc: -1 }, { dr: -1, dc: -1 } 
-            ];
-
-            const sortedWords = [...WORDS_TO_FIND].sort((a, b) => b.length - a.length);
-
-            sortedWords.forEach(word => {
-                const len = word.length;
-                let placed = false;
-                let attempts = 0;
-
-                while (!placed && attempts < 500) { 
-                    attempts++;
-                    const drdc = directions[Math.floor(Math.random() * directions.length)];
-                    const startRow = Math.floor(Math.random() * GRID_SIZE);
-                    const startCol = Math.floor(Math.random() * GRID_SIZE);
-
-                    let canPlace = true;
-                    let cellsToPlace = [];
-
-                    for (let i = 0; i < len; i++) {
-                        const r = startRow + drdc.dr * i;
-                        const c = startCol + drdc.dc * i;
-
-                        if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE) {
-                            canPlace = false;
-                            break;
-                        }
-                        if (grid[r][c] !== '' && grid[r][c] !== word[i]) {
-                            canPlace = false;
-                            break;
-                        }
-                        cellsToPlace.push({ r, c, letter: word[i] });
-                    }
-
-                    if (canPlace) {
-                        cellsToPlace.forEach(({ r, c, letter }) => {
-                            grid[r][c] = letter;
-                        });
-                        placed = true;
-                    }
-                }
-            });
-        }
-
-        function fillEmptyCells() {
-            const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            for (let r = 0; r < GRID_SIZE; r++) {
-                for (let c = 0; c < GRID_SIZE; c++) {
-                    if (grid[r][c] === '') {
-                        grid[r][c] = ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
-                    }
-                }
-            }
-        }
-
-        function renderGrid() {
-            gridContainer.innerHTML = '';
-            for (let r = 0; r < GRID_SIZE; r++) {
-                for (let c = 0; c < GRID_SIZE; c++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'grid-cell';
-                    cell.textContent = grid[r][c];
-                    cell.dataset.row = r;
-                    cell.dataset.col = c;
-                    gridContainer.appendChild(cell);
-                }
-            }
-        }
-
-        function renderWordList() {
-            wordListContainer.innerHTML = '';
-            WORDS_TO_FIND.forEach(word => {
-                const wordElement = document.createElement('div');
-                wordElement.className = 'word-to-find';
-                wordElement.id = `word-${word}`;
-                wordElement.textContent = word;
-                wordListContainer.appendChild(wordElement);
-            });
-        }
-
-        // --- Selection Logic ---
-
-        function getSelectedWord() {
-            return currentSelection.map(cell => cell.textContent).join('');
-        }
-
-        function checkSelection() {
-            if (!isGameRunning || currentSelection.length === 0) return;
-            
-            const word = getSelectedWord();
-            const reverseWord = word.split('').reverse().join('');
-            
-            let foundMatch = null;
-
-            if (WORDS_TO_FIND.includes(word)) {
-                foundMatch = word;
-            } else if (WORDS_TO_FIND.includes(reverseWord)) {
-                foundMatch = reverseWord;
-            }
-
-            if (foundMatch && !foundWords.includes(foundMatch)) {
-                // Success!
-                foundWords.push(foundMatch);
-                messageArea.textContent = `SUCCESS! Found "${foundMatch}"!`;
-                scoreDisplay.textContent = foundWords.length;
-                
-                // Mark cells and word list
-                currentSelection.forEach(cell => {
-                    if (cell.parentNode === gridContainer) {
-                        cell.classList.remove('selected');
-                        cell.classList.add('found');
-                    }
-                });
-
-                const wordListElement = document.getElementById(`word-${foundMatch}`);
-                if (wordListElement) {
-                    wordListElement.classList.add('found');
-                }
-                
-                if (foundWords.length === WORDS_TO_FIND.length) {
-                    endGame("PERFECT! You found all Kogi words!");
-                }
-                
-            } else if (foundMatch && foundWords.includes(foundMatch)) {
-                 messageArea.textContent = `You already found "${foundMatch}"!`;
-            } else {
-                messageArea.textContent = "Not a match. Keep searching!";
-            }
-            
-            // Clear selection visually after checking
-            currentSelection.forEach(cell => {
-                if (cell.parentNode === gridContainer) {
-                    cell.classList.remove('selected');
-                }
-            });
-            currentSelection = [];
-            startCell = null;
-        }
-
-        // --- Event Handlers (Mouse/Touch) ---
-
-        function handleStart(e) {
-            if (!isGameRunning) return;
-            e.preventDefault();
-            isMouseDown = true;
-            
-            const clientE = (e.touches && e.touches.length > 0) ? e.touches[0] : e;
-            const targetInfo = getCellFromEvent(clientE);
-            
-            if (!targetInfo) return;
-
-            currentSelection.forEach(cell => cell.classList.remove('selected'));
-            currentSelection = [targetInfo.cell];
-            startCell = { r: targetInfo.r, c: targetInfo.c };
-            targetInfo.cell.classList.add('selected');
-            messageArea.textContent = 'Drag to select...';
-        }
-
-        function handleMove(e) {
-            if (!isGameRunning || !isMouseDown || !startCell) return;
-            e.preventDefault();
-
-            const clientE = (e.touches && e.touches.length > 0) ? e.touches[0] : e;
-            const targetInfo = getCellFromEvent(clientE);
-            
-            if (!targetInfo) return;
-
-            const endRow = targetInfo.r;
-            const endCol = targetInfo.c;
-            const startRow = startCell.r;
-            const startCol = startCell.c;
-            
-            const dr = Math.abs(endRow - startRow);
-            const dc = Math.abs(endCol - startCol);
-            
-            if (dr !== 0 && dc !== 0 && dr !== dc) {
+        function displayQuestion() {
+            if (currentQuestionIndex >= shuffledQuestions.length) {
+                endGame("Quiz Completed!");
                 return;
             }
+
+            progressDisplay.textContent = `${currentQuestionIndex + 1}/${shuffledQuestions.length}`;
+            const currentQuestion = shuffledQuestions[currentQuestionIndex];
+            questionText.textContent = currentQuestion.question;
+
+            optionsContainer.innerHTML = '';
             
-            // Clear current selection visually
-            const previousSelection = [...currentSelection];
-            previousSelection.forEach(cell => cell.classList.remove('selected'));
-            currentSelection = [];
-
-            const dirR = endRow === startRow ? 0 : (endRow > startRow ? 1 : -1);
-            const dirC = endCol === startCol ? 0 : (endCol > startCol ? 1 : -1);
-
-            let r = startRow;
-            let c = startCol;
-
-            // Iterate along the line
-            while (true) {
-                const cellIndex = r * GRID_SIZE + c;
-                const cellElement = gridContainer.children[cellIndex];
-                
-                if (cellElement) {
-                    currentSelection.push(cellElement);
-                    if (!cellElement.classList.contains('found')) {
-                        cellElement.classList.add('selected');
-                    }
-                }
-
-                if (r === endRow && c === endCol) break;
-
-                r += dirR;
-                c += dirC;
-            }
+            // Shuffle options for each question
+            const shuffledOptions = currentQuestion.options.sort(() => Math.random() - 0.5);
+            
+            shuffledOptions.forEach(option => {
+                const button = document.createElement('button');
+                button.className = 'option-button';
+                button.textContent = option;
+                button.addEventListener('click', () => selectAnswer(button, option, currentQuestion.answer));
+                optionsContainer.appendChild(button);
+            });
         }
-
-        function handleEnd(e) {
-            if (!isMouseDown) return;
-            isMouseDown = false;
-            checkSelection();
-        }
-
-        // --- Game Control ---
         
+        function selectAnswer(button, selectedOption, correctAnswer) {
+            // Disable all buttons after an answer is selected
+            const buttons = optionsContainer.querySelectorAll('.option-button');
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (selectedOption === correctAnswer) {
+                score++;
+                button.classList.add('correct');
+            } else {
+                button.classList.add('incorrect');
+                // Highlight the correct answer
+                buttons.forEach(btn => {
+                    if (btn.textContent === correctAnswer) {
+                        btn.classList.add('correct');
+                    }
+                });
+            }
+
+            // Move to the next question after a short delay
+            setTimeout(() => {
+                currentQuestionIndex++;
+                displayQuestion();
+            }, 1200);
+        }
+
         function startTimer() {
             if (gameInterval) clearInterval(gameInterval);
             
             gameInterval = setInterval(() => {
                 timeLeft--;
-                timerDisplay.textContent = formatTime(timeLeft);
+                const minutes = Math.floor(timeLeft / 60);
+                const secs = timeLeft % 60;
+                timerDisplay.textContent = `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
                 
                 if (timeLeft <= 0) {
-                    endGame("TIME UP!");
+                    endGame("Time's Up!");
                 }
             }, 1000);
         }
 
-        function handleStartButton() {
-            startButton.disabled = true;
-            messageArea.textContent = 'Game started! Find the words.';
-            isGameRunning = true;
-            initializeGrid();
-            startTimer();
+        function endGame(reason) {
+            clearInterval(gameInterval);
+            quizArea.innerHTML = `
+                <h2 style="color: #00008B;">${reason}</h2>
+                <p style="font-size: 1.2em;">Your Final Score is:</p>
+                <p style="font-size: 2.5em; font-weight: bold; color: #D2691E;">${score} / ${shuffledQuestions.length}</p>
+            `;
+            startButton.textContent = "Play Again";
+            startButtonContainer.style.display = 'block';
+            statsBar.style.display = 'none';
         }
 
-        // --- Event Listeners and Initialization ---
-
-        // Mouse events
-        gridContainer.addEventListener('mousedown', handleStart);
-        gridContainer.addEventListener('mousemove', handleMove);
-        window.addEventListener('mouseup', handleEnd);
-
-        // Touch events (Primary fix for mobile)
-        gridContainer.addEventListener('touchstart', handleStart);
-        gridContainer.addEventListener('touchmove', handleMove);
-        window.addEventListener('touchend', handleEnd);
-        
-        startButton.addEventListener('click', handleStartButton);
-
-        // Initial render before start
-        initializeGrid();
-
+        startButton.addEventListener('click', startGame);
     </script>
 </body>
 </html>
