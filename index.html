@@ -23,7 +23,7 @@
         #game-container {
             width: 95%; /* Increased width for mobile use */
             max-width: 450px; 
-            padding: 15px; /* Slightly reduced padding */
+            padding: 15px;
             background-color: #FFFFFF;
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
@@ -34,7 +34,7 @@
 
         h1 {
             color: #1E90FF; 
-            font-size: 1.6em; /* Slightly smaller H1 */
+            font-size: 1.6em; 
             margin-bottom: 5px;
         }
 
@@ -75,18 +75,18 @@
 
         #grid-container {
             display: grid;
-            /* REDUCED GRID SIZE TO 10X10 FOR MOBILE */
             grid-template-columns: repeat(10, 1fr); 
             gap: 0px; 
             border: 3px solid #1E90FF; 
             border-radius: 5px;
             overflow: hidden; 
-            width: 100%; /* Ensure it uses max space available */
+            width: 100%;
+            touch-action: none; /* Prevents browser scrolling/zooming during drag */
         }
 
         .grid-cell {
             width: 100%;
-            padding: 0.5em 0; /* Slightly reduced padding */
+            padding: 0.5em 0; 
             aspect-ratio: 1 / 1; 
             display: flex;
             justify-content: center;
@@ -100,14 +100,15 @@
             user-select: none;
             border: none; 
             box-sizing: border-box; 
-            touch-action: none; /* Crucial for better touch scrolling/dragging */
+            z-index: 0; /* Base layer */
         }
         
         /* Highlighting for selected cells */
         .grid-cell.selected {
             background-color: #ADD8E6; 
             border: 1px solid #1E90FF; 
-            z-index: 1; 
+            z-index: 2; /* Higher layer for selection */
+            position: relative;
         }
         
         /* Highlighting for FOUND words */
@@ -115,8 +116,9 @@
             background-color: #3CB371; 
             color: white;
             border: 1px solid #3CB371; 
-            box-shadow: 0 0 5px #3CB371;
-            z-index: 1;
+            box-shadow: 0 0 3px #3CB371;
+            z-index: 3; /* Top layer for found words */
+            position: relative;
         }
 
         #word-list-container {
@@ -126,7 +128,7 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 5px; /* Reduced gap */
+            gap: 5px; 
             padding: 10px;
             background-color: #fff;
             border-radius: 8px;
@@ -134,11 +136,11 @@
         }
 
         .word-to-find {
-            padding: 4px 8px; /* Reduced padding */
+            padding: 4px 8px; 
             background-color: #ccc;
             color: #555;
             border-radius: 4px;
-            font-size: 0.8em; /* Reduced font size */
+            font-size: 0.8em; 
             font-weight: bold;
             text-transform: uppercase;
             transition: opacity 0.3s, background-color 0.3s;
@@ -170,7 +172,7 @@
         /* Specific Mobile adjustments for very small screens */
         @media (max-width: 400px) {
             .grid-cell {
-                font-size: 0.9em; 
+                font-size: 0.8em; 
                 padding: 0.4em 0;
             }
         }
@@ -199,7 +201,7 @@
     
     <script>
         /* --- JAVASCRIPT LOGIC --- */
-        // REDUCED TO 15 WORDS
+        // 15 WORDS
         const WORDS_TO_FIND = [
             "NIGER", "BENUE", "LOKOJA", "IGALA", 
             "EBIRA", "AJAOKUTA", "OKENE", "KABBA",
@@ -207,7 +209,7 @@
             "STEEL", "RIVERS", "MINERALS"
         ];
         
-        const GRID_SIZE = 10; // REDUCED GRID SIZE
+        const GRID_SIZE = 10; // 10x10 grid
         const TIMER_DURATION = 300; // 5 minutes in seconds
 
         const gridContainer = document.getElementById('grid-container');
@@ -227,40 +229,41 @@
         let timeLeft = TIMER_DURATION;
         let gameInterval;
         
-        // Initial setup of total words count
         totalWordsDisplay.textContent = WORDS_TO_FIND.length;
 
-        // --- Timer Functions ---
+        // --- Utility Functions ---
+
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
             const secs = seconds % 60;
             return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
         }
 
-        function startTimer() {
-            if (gameInterval) clearInterval(gameInterval);
-            
-            gameInterval = setInterval(() => {
-                timeLeft--;
-                timerDisplay.textContent = formatTime(timeLeft);
-                
-                if (timeLeft <= 0) {
-                    endGame("TIME UP!");
+        function getCellFromEvent(e) {
+            // Use elementFromPoint for reliable touch target detection
+            let target;
+            if (e.clientX !== undefined) {
+                // Mouse event
+                target = e.target.closest('.grid-cell');
+            } else if (e.touches && e.touches.length > 0) {
+                // Touch event
+                const touch = e.touches[0];
+                target = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (target && !target.classList.contains('grid-cell')) {
+                    target = target.closest('.grid-cell');
                 }
-            }, 1000);
+            }
+            
+            if (!target) return null;
+
+            return {
+                cell: target,
+                r: parseInt(target.dataset.row),
+                c: parseInt(target.dataset.col)
+            };
         }
 
-        function endGame(reason) {
-            isGameRunning = false;
-            clearInterval(gameInterval);
-            messageArea.textContent = `${reason} Final score: ${foundWords.length}/${WORDS_TO_FIND.length}`;
-            startButton.textContent = "Play Again";
-            startButton.disabled = false;
-            currentSelection.forEach(cell => cell.classList.remove('selected'));
-            isMouseDown = false;
-        }
-
-        // --- Core Scramble Functions ---
+        // --- Game Flow Functions ---
 
         function initializeGrid() {
             gridContainer.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 1fr)`;
@@ -359,8 +362,8 @@
                 wordListContainer.appendChild(wordElement);
             });
         }
-        
-        // --- Selection and Checking Logic ---
+
+        // --- Selection Logic ---
 
         function getSelectedWord() {
             return currentSelection.map(cell => cell.textContent).join('');
@@ -421,21 +424,14 @@
 
         // --- Event Handlers (Mouse/Touch) ---
 
-        function getCellFromEvent(e) {
-            let target = e.target.closest('.grid-cell');
-            if (!target) return null;
-            return {
-                cell: target,
-                r: parseInt(target.dataset.row),
-                c: parseInt(target.dataset.col)
-            };
-        }
-
         function handleStart(e) {
             if (!isGameRunning) return;
             e.preventDefault();
             isMouseDown = true;
-            const targetInfo = getCellFromEvent(e);
+            
+            const clientE = (e.touches && e.touches.length > 0) ? e.touches[0] : e;
+            const targetInfo = getCellFromEvent(clientE);
+            
             if (!targetInfo) return;
 
             currentSelection.forEach(cell => cell.classList.remove('selected'));
@@ -449,7 +445,9 @@
             if (!isGameRunning || !isMouseDown || !startCell) return;
             e.preventDefault();
 
-            const targetInfo = getCellFromEvent(e);
+            const clientE = (e.touches && e.touches.length > 0) ? e.touches[0] : e;
+            const targetInfo = getCellFromEvent(clientE);
+            
             if (!targetInfo) return;
 
             const endRow = targetInfo.r;
@@ -464,6 +462,7 @@
                 return;
             }
             
+            // Clear current selection visually
             const previousSelection = [...currentSelection];
             previousSelection.forEach(cell => cell.classList.remove('selected'));
             currentSelection = [];
@@ -474,6 +473,7 @@
             let r = startRow;
             let c = startCol;
 
+            // Iterate along the line
             while (true) {
                 const cellIndex = r * GRID_SIZE + c;
                 const cellElement = gridContainer.children[cellIndex];
@@ -498,6 +498,21 @@
             checkSelection();
         }
 
+        // --- Game Control ---
+        
+        function startTimer() {
+            if (gameInterval) clearInterval(gameInterval);
+            
+            gameInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = formatTime(timeLeft);
+                
+                if (timeLeft <= 0) {
+                    endGame("TIME UP!");
+                }
+            }, 1000);
+        }
+
         function handleStartButton() {
             startButton.disabled = true;
             messageArea.textContent = 'Game started! Find the words.';
@@ -513,13 +528,9 @@
         gridContainer.addEventListener('mousemove', handleMove);
         window.addEventListener('mouseup', handleEnd);
 
-        // Touch events (for mobile)
-        gridContainer.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 1) handleStart(e.touches[0]);
-        });
-        gridContainer.addEventListener('touchmove', (e) => {
-            if (e.touches.length === 1) handleMove(e.touches[0]);
-        });
+        // Touch events (Primary fix for mobile)
+        gridContainer.addEventListener('touchstart', handleStart);
+        gridContainer.addEventListener('touchmove', handleMove);
         window.addEventListener('touchend', handleEnd);
         
         startButton.addEventListener('click', handleStartButton);
