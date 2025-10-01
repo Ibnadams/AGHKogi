@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kogi Word Search Scramble: 5-Minute Challenge (Kogi State AGH)</title>
+    
+    <style>
+        /* --- CSS STYLES --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* Start from the top */
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            background-color: #F0F8FF; /* Light Blue background */
+            color: #333;
+        }
+
+        #game-container {
+            width: 90%;
+            max-width: 500px; /* Slightly wider max-width for better grid display */
+            padding: 20px;
+            background-color: #FFFFFF;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            margin-bottom: 20px;
+            margin-top: 10px;
+        }
+
+        h1 {
+            color: #1E90FF; /* Dodger Blue */
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+
+        #creator-ref {
+            font-size: 0.9em;
+            font-style: italic;
+            opacity: 0.7;
+            margin-bottom: 10px;
+        }
+        
+        #stats-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+            width: 100%;
+        }
+
+        #timer-display, #score-display {
+            font-weight: bold;
+            color: #D32F2F; /* Red for emphasis */
+        }
+
+        #message-area {
+            height: 30px;
+            color: #FF4500;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center; /* Ensure message is centered */
+        }
+
+        #grid-container {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr); 
+            gap: 0px; /* IMPORTANT: Removed gap between cells */
+            border: 3px solid #1E90FF; /* Overall grid border */
+            border-radius: 5px;
+            overflow: hidden; /* Ensures child elements don't overflow rounded corners */
+        }
+
+        .grid-cell {
+            width: 100%;
+            padding: 0.6em 0; /* Adjusted padding for larger text/touch area */
+            aspect-ratio: 1 / 1; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.1em; /* Increased font size for better readability */
+            font-weight: bold;
+            background-color: #E6E6FA; /* Lavender for unselected cells */
+            color: #1E90FF;
+            cursor: pointer;
+            transition: background-color 0.1s, border-color 0.1s;
+            user-select: none;
+            /* REMOVED INDIVIDUAL CELL BORDERS */
+            border: none; 
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+        }
+        
+        /* Highlighting for selected cells (in process of dragging) */
+        .grid-cell.selected {
+            background-color: #ADD8E6; /* Light blue when selected */
+            border: 1px solid #1E90FF; /* Border appears on selection */
+            z-index: 1; /* Bring selected cell slightly forward for border visibility */
+        }
+        
+        /* Highlighting for FOUND words */
+        .grid-cell.found {
+            background-color: #3CB371; /* Medium Sea Green */
+            color: white;
+            border: 1px solid #3CB371; /* Border appears when found */
+            box-shadow: 0 0 5px #3CB371;
+            z-index: 1;
+        }
+
+        #word-list-container {
+            width: 90%;
+            max-width: 500px;
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px; 
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .word-to-find {
+            padding: 5px 10px;
+            background-color: #ccc;
+            color: #555;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: opacity 0.3s, background-color 0.3s;
+        }
+
+        .word-to-find.found {
+            background-color: #3CB371;
+            color: white;
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+        
+        #start-button {
+            padding: 10px 20px;
+            font-size: 1.1em;
+            background-color: #1E90FF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        #start-button:disabled {
+            background-color: #999;
+            cursor: not-allowed;
+        }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.5em;
+            }
+            #creator-ref {
+                font-size: 0.8em;
+            }
+            .grid-cell {
+                font-size: 0.9em; /* Slightly smaller font for more letters on small screens */
+                padding: 0.5em 0;
+            }
+            #word-list-container {
+                gap: 5px;
+            }
+            .word-to-find {
+                font-size: 0.8em;
+                padding: 4px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>Kogi Word Search Scramble 🗺️</h1>
+        <div id="creator-ref">Find the words related to the Confluence State! (Kogi State AGH)</div>
+        
+        <div id="stats-bar">
+            <span>Time Left: <span id="timer-display">5:00</span></span>
+            <span>Words Found: <span id="score-display">0</span>/<span id="total-words"></span></span>
+        </div>
+
+        <div id="message-area">Click "Start Game" to begin your 5-minute challenge!</div>
+
+        <div id="grid-container">
+            </div>
+        
+        <button id="start-button">Start Game</button>
+    </div>
+    
+    <div id="word-list-container">
+        </div>
+    
+    <script>
+        /* --- JAVASCRIPT LOGIC --- */
+        const WORDS_TO_FIND = [
+            "NIGER", "BENUE", "LOKOJA", "IGALA", 
+            "EBIRA", "AJAOKUTA", "OKENE", "KABBA",
+            "YAGBA", "KOTONKARFE", "CHAD", "EKITI",
+            "KOGI", "CONFLUENCE", "FEDERAL", "COAL",
+            "STEEL", "RIVERS", "BOKO", "MINERALS"
+        ];
+        
+        const GRID_SIZE = 12; // 12x12 grid
+        const TIMER_DURATION = 300; // 5 minutes in seconds
+
+        const gridContainer = document.getElementById('grid-container');
+        const wordListContainer = document.getElementById('word-list-container');
+        const messageArea = document.getElementById('message-area');
+        const timerDisplay = document.getElementById('timer-display');
+        const scoreDisplay = document.getElementById('score-display');
+        const totalWordsDisplay = document.getElementById('total-words');
+        const startButton = document.getElementById('start-button');
+
+        let grid = [];
+        let isGameRunning = false;
+        let isMouseDown = false;
+        let startCell = null;
+        let currentSelection = [];
+        let foundWords = [];
+        let timeLeft = TIMER_DURATION;
+        let gameInterval;
+        
+        // Initial setup of total words count
+        totalWordsDisplay.textContent = WORDS_TO_FIND.length;
+
+        // --- Timer Functions ---
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        function startTimer() {
+            if (gameInterval) clearInterval(gameInterval);
+            
+            gameInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = formatTime(timeLeft);
+                
+                if (timeLeft <= 0) {
+                    endGame("TIME UP!");
+                }
+            }, 1000);
+        }
+
+        function endGame(reason) {
+            isGameRunning = false;
+            clearInterval(gameInterval);
+            messageArea.textContent = `${reason} Final score: ${foundWords.length}/${WORDS_TO_FIND.length}`;
+            startButton.textContent = "Play Again";
+            startButton.disabled = false;
+            // Clear any active selection
+            currentSelection.forEach(cell => cell.classList.remove('selected'));
+            isMouseDown = false;
+        }
+
+        // --- Core Scramble Functions ---
+
+        // 1. Initialize Grid and Fill with Letters
+        function initializeGrid() {
+            gridContainer.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 1fr)`;
+            grid = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(''));
+            foundWords = [];
+            timeLeft = TIMER_DURATION;
+            scoreDisplay.textContent = 0;
+            timerDisplay.textContent = formatTime(timeLeft);
+            
+            placeWords();
+            fillEmptyCells();
+            renderGrid();
+            renderWordList();
+        }
+
+        // 2. Place words into the grid (Improved placement attempts)
+        function placeWords() {
+            const directions = [
+                { dr: 0, dc: 1 },  // Right
+                { dr: 1, dc: 0 },  // Down
+                { dr: 1, dc: 1 },  // Diagonal Down-Right
+                { dr: 0, dc: -1 }, // Left
+                { dr: -1, dc: 0 }, // Up
+                { dr: -1, dc: 1 }, // Diagonal Up-Right
+                { dr: 1, dc: -1 }, // Diagonal Down-Left
+                { dr: -1, dc: -1 } // Diagonal Up-Left
+            ];
+
+            const sortedWords = [...WORDS_TO_FIND].sort((a, b) => b.length - a.length);
+
+            sortedWords.forEach(word => {
+                const len = word.length;
+                let placed = false;
+                let attempts = 0;
+
+                while (!placed && attempts < 500) { // Increased attempts for the bigger grid
+                    attempts++;
+                    const drdc = directions[Math.floor(Math.random() * directions.length)];
+                    const startRow = Math.floor(Math.random() * GRID_SIZE);
+                    const startCol = Math.floor(Math.random() * GRID_SIZE);
+
+                    let canPlace = true;
+                    let cellsToPlace = [];
+
+                    for (let i = 0; i < len; i++) {
+                        const r = startRow + drdc.dr * i;
+                        const c = startCol + drdc.dc * i;
+
+                        // Check bounds and collision
+                        if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE) {
+                            canPlace = false;
+                            break;
+                        }
+                        if (grid[r][c] !== '' && grid[r][c] !== word[i]) {
+                            canPlace = false;
+                            break;
+                        }
+                        cellsToPlace.push({ r, c, letter: word[i] });
+                    }
+
+                    if (canPlace) {
+                        cellsToPlace.forEach(({ r, c, letter }) => {
+                            grid[r][c] = letter;
+                        });
+                        placed = true;
+                    }
+                }
+            });
+        }
+
+        // 3. Fill remaining empty cells
+        function fillEmptyCells() {
+            const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (grid[r][c] === '') {
+                        grid[r][c] = ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+                    }
+                }
+            }
+        }
+
+        // 4. Render Grid to HTML
+        function renderGrid() {
+            gridContainer.innerHTML = '';
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.textContent = grid[r][c];
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    gridContainer.appendChild(cell);
+                }
+            }
+        }
+
+        // 5. Render Word List
+        function renderWordList() {
+            wordListContainer.innerHTML = '';
+            WORDS_TO_FIND.forEach(word => {
+                const wordElement = document.createElement('div');
+                wordElement.className = 'word-to-find';
+                wordElement.id = `word-${word}`;
+                wordElement.textContent = word;
+                wordListContainer.appendChild(wordElement);
+            });
+        }
+        
+        // --- Selection and Checking Logic ---
+
+        function getSelectedWord() {
+            return currentSelection.map(cell => cell.textContent).join('');
+        }
+
+        function checkSelection() {
+            if (!isGameRunning || currentSelection.length === 0) return;
+            
+            const word = getSelectedWord();
+            const reverseWord = word.split('').reverse().join('');
+            
+            let foundMatch = null;
+
+            if (WORDS_TO_FIND.includes(word)) {
+                foundMatch = word;
+            } else if (WORDS_TO_FIND.includes(reverseWord)) {
+                foundMatch = reverseWord;
+            }
+
+            if (foundMatch && !foundWords.includes(foundMatch)) {
+                // Success!
+                foundWords.push(foundMatch);
+                messageArea.textContent = `SUCCESS! Found "${foundMatch}"!`;
+                scoreDisplay.textContent = foundWords.length;
+                
+                // 1. Mark cells as found
+                currentSelection.forEach(cell => {
+                    // Check if cell is still in document before trying to modify
+                    if (cell.parentNode === gridContainer) {
+                        cell.classList.remove('selected');
+                        cell.classList.add('found');
+                    }
+                });
+
+                // 2. Mark word in the list
+                const wordListElement = document.getElementById(`word-${foundMatch}`);
+                if (wordListElement) {
+                    wordListElement.classList.add('found');
+                }
+                
+                // 3. Check for win
+                if (foundWords.length === WORDS_TO_FIND.length) {
+                    endGame("PERFECT! You found all Kogi words!");
+                }
+                
+            } else if (foundMatch && foundWords.includes(foundMatch)) {
+                 messageArea.textContent = `You already found "${foundMatch}"!`;
+            } else {
+                // Failure
+                messageArea.textContent = "Not a match. Keep searching!";
+            }
+            
+            // Clear selection visually after checking
+            currentSelection.forEach(cell => {
+                // Check if cell is still in document before trying to modify
+                if (cell.parentNode === gridContainer) {
+                    cell.classList.remove('selected');
+                }
+            });
+            currentSelection = [];
+            startCell = null;
+        }
+
+        // --- Event Handlers (Mouse/Touch) ---
+
+        function getCellFromEvent(e) {
+            let target = e.target.closest('.grid-cell');
+            if (!target) return null;
+            return {
+                cell: target,
+                r: parseInt(target.dataset.row),
+                c: parseInt(target.dataset.col)
+            };
+        }
+
+        function handleStart(e) {
+            if (!isGameRunning) return;
+            e.preventDefault();
+            isMouseDown = true;
+            const targetInfo = getCellFromEvent(e);
+            if (!targetInfo) return;
+
+            // Start a new selection
+            currentSelection.forEach(cell => cell.classList.remove('selected'));
+            currentSelection = [targetInfo.cell];
+            startCell = { r: targetInfo.r, c: targetInfo.c };
+            targetInfo.cell.classList.add('selected');
+            messageArea.textContent = 'Drag to select...';
+        }
+
+        function handleMove(e) {
+            if (!isGameRunning || !isMouseDown || !startCell) return;
+            e.preventDefault();
+
+            const targetInfo = getCellFromEvent(e);
+            if (!targetInfo) return;
+
+            const endRow = targetInfo.r;
+            const endCol = targetInfo.c;
+            const startRow = startCell.r;
+            const startCol = startCell.c;
+            
+            const dr = Math.abs(endRow - startRow);
+            const dc = Math.abs(endCol - startCol);
+            
+            // Only allow horizontal, vertical, or diagonal selections
+            if (dr !== 0 && dc !== 0 && dr !== dc) {
+                return;
+            }
+            
+            // Temporarily remove 'selected' from previous cells in this move
+            const previousSelection = [...currentSelection]; // Clone for iteration
+            previousSelection.forEach(cell => cell.classList.remove('selected'));
+            currentSelection = [];
+
+            const dirR = endRow === startRow ? 0 : (endRow > startRow ? 1 : -1);
+            const dirC = endCol === startCol ? 0 : (endCol > startCol ? 1 : -1);
+
+            let r = startRow;
+            let c = startCol;
+
+            // Iterate along the line
+            while (true) {
+                const cellIndex = r * GRID_SIZE + c;
+                const cellElement = gridContainer.children[cellIndex];
+                
+                if (cellElement) {
+                    currentSelection.push(cellElement);
+                    // Only add 'selected' if not already 'found'
+                    if (!cellElement.classList.contains('found')) {
+                        cellElement.classList.add('selected');
+                    }
+                }
+
+                if (r === endRow && c === endCol) break;
+
+                r += dirR;
+                c += dirC;
+            }
+        }
+
+        function handleEnd(e) {
+            if (!isMouseDown) return;
+            isMouseDown = false;
+            checkSelection();
+        }
+
+        function handleStartButton() {
+            startButton.disabled = true;
+            messageArea.textContent = 'Game started! Find the words.';
+            isGameRunning = true;
+            initializeGrid();
+            startTimer();
+        }
+
+        // --- Event Listeners and Initialization ---
+
+        // Mouse events
+        gridContainer.addEventListener('mousedown', handleStart);
+        gridContainer.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleEnd);
+
+        // Touch events (for mobile)
+        gridContainer.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) handleStart(e.touches[0]);
+        });
+        gridContainer.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1) handleMove(e.touches[0]);
+        });
+        window.addEventListener('touchend', handleEnd);
+        
+        startButton.addEventListener('click', handleStartButton);
+
+        // Initial render before start
+        initializeGrid();
+
+    </script>
+</body>
+</html>
